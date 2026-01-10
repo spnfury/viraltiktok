@@ -1,65 +1,160 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import ModeSelector from '@/components/ModeSelector';
+import PromptInput from '@/components/PromptInput';
 
 export default function Home() {
+  const [mode, setMode] = useState<'tiktok' | 'prompt'>('tiktok');
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleAnalyze = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) return;
+
+    setIsLoading(true);
+    // Navigate to analyze page with URL as query param
+    router.push(`/analyze?url=${encodeURIComponent(url)}`);
+  };
+
+  const handleDirectGenerate = async (data: { prompt: string; options: any }) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        router.push(`/generate?id=${result.data.generationId}`);
+      } else {
+        alert(`Error: ${result.error}`);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      alert('Error connecting to server');
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <>
+      <div className="gradient-bg"></div>
+
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20 relative">
+        {/* Navigation */}
+        <nav className="absolute top-8 right-8 z-10">
+          <Link
+            href="/history"
+            className="glass px-6 py-3 flex items-center gap-2 hover:bg-zinc-800/50 transition-all border-zinc-700/50"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <span>📚</span>
+            <span className="font-semibold">Mi Biblioteca</span>
+          </Link>
+        </nav>
+
+        <main className="max-w-4xl w-full text-center fade-in">
+          {/* Hero Section */}
+          <div className="mb-12">
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              TikTok to{' '}
+              <span className="gradient-text">Sora</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              {mode === 'tiktok'
+                ? 'Analiza cualquier TikTok y genera prompts optimizados para Sora AI.'
+                : 'Crea videos cinematográficos directamente desde tu imaginación con Sora.'}
+            </p>
+          </div>
+
+          {/* Mode Selector */}
+          <ModeSelector mode={mode} onModeChange={setMode} />
+
+          {/* Conditional Input Forms */}
+          {mode === 'tiktok' ? (
+            <form onSubmit={handleAnalyze} className="mb-12 fade-in">
+              <div className="glass p-8 max-w-2xl mx-auto">
+                <div className="mb-6">
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://www.tiktok.com/@username/video/..."
+                    className="input-field"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn-primary w-full md:w-auto"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <div className="spinner"></div>
+                      Analizando...
+                    </span>
+                  ) : (
+                    '✨ Analizar Video'
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="mb-12">
+              <PromptInput onSubmit={handleDirectGenerate} isLoading={isLoading} />
+            </div>
+          )}
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="glass p-6 card-hover">
+              <div className="text-4xl mb-4">🎙️</div>
+              <h3 className="text-xl font-semibold mb-2">Transcripción</h3>
+              <p className="text-gray-400">
+                Whisper AI extrae el audio completo con precisión
+              </p>
+            </div>
+
+            <div className="glass p-6 card-hover">
+              <div className="text-4xl mb-4">👁️</div>
+              <h3 className="text-xl font-semibold mb-2">Análisis Visual</h3>
+              <p className="text-gray-400">
+                GPT-4 Vision analiza cada frame del video
+              </p>
+            </div>
+
+            <div className="glass p-6 card-hover">
+              <div className="text-4xl mb-4">🎬</div>
+              <h3 className="text-xl font-semibold mb-2">Generación Sora</h3>
+              <p className="text-gray-400">
+                Crea videos increíbles a partir de texto en segundos
+              </p>
+            </div>
+          </div>
+
+          {/* Info Note */}
+          <div className="mt-12 max-w-2xl mx-auto">
+            <div className="glass p-6 text-left">
+              <p className="text-sm text-gray-400 leading-relaxed">
+                <strong className="text-purple-400">💡 Nota:</strong> {mode === 'tiktok'
+                  ? 'El análisis puede tomar 1-3 minutos dependiendo de la duración del video.'
+                  : 'La generación de video con Sora puede tomar entre 2 y 5 minutos.'}
+                Asegúrate de tener configurada tu API Key de OpenAI.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
+
