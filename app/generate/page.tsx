@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import GenerationProgress from '@/components/GenerationProgress';
 import VideoPlayer from '@/components/VideoPlayer';
 
-export default function GeneratePage() {
+function GenerateContent() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
 
@@ -121,5 +121,17 @@ export default function GeneratePage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function GeneratePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="spinner"></div>
+            </div>
+        }>
+            <GenerateContent />
+        </Suspense>
     );
 }

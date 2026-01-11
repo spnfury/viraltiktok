@@ -5,6 +5,7 @@ import {
     downloadTikTok,
     extractAudio,
     extractKeyFrames,
+    extractHighDensityFrames,
     getVideoMetadata,
     cleanup,
     getTempDir,
@@ -14,6 +15,8 @@ import {
     analyzeFrame,
     generateContextAnalysis,
     generateSoraPrompts,
+    detectHook,
+    analyzeTimingPatterns,
     type FrameAnalysis,
 } from '@/lib/ai-analyzer';
 
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
     let framesDir: string | null = null;
 
     try {
-        const { url } = await request.json();
+        const { url, keyOwner } = await request.json();
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
         const framePaths = await extractKeyFrames(videoPath, framesDir, 2);
 
         // Step 5: Transcribe audio with Whisper
-        const transcription = await transcribeAudio(audioPath);
+        const transcription = await transcribeAudio(audioPath, keyOwner);
 
         // Step 6: Analyze frames with GPT-4 Vision
         const frameAnalyses: FrameAnalysis[] = [];
@@ -70,24 +73,44 @@ export async function POST(request: NextRequest) {
             const framePath = framePaths[i];
             const timestamp = i * 2; // 2 seconds interval
             const frameBuffer = await fs.readFile(framePath);
-            const analysis = await analyzeFrame(frameBuffer, timestamp);
+            const analysis = await analyzeFrame(frameBuffer, timestamp, keyOwner);
             frameAnalyses.push(analysis);
         }
+
+        // Step 6.5: Extract and analyze high-density frames for hook detection (0-3s)
+        const hookFramesDir = path.join(tempDir, 'hook_frames');
+        const hookFramePaths = await extractHighDensityFrames(videoPath, hookFramesDir);
+
+        const hookFrameBuffers = [];
+        for (const hookFramePath of hookFramePaths) {
+            const buffer = await fs.readFile(hookFramePath);
+            // Extract timestamp from filename like "hook_frame_0_0s.jpg"
+            const match = hookFramePath.match(/hook_frame_\d+_(\d+\.?\d*)s\.jpg/);
+            const timestamp = match ? parseFloat(match[1]) : 0;
+            hookFrameBuffers.push({ buffer, timestamp });
+        }
+
+        const hookAnalysis = await detectHook(hookFrameBuffers, transcription, keyOwner);
 
         // Step 7: Generate context analysis
         const context = await generateContextAnalysis(
             transcription,
             frameAnalyses,
-            metadata
+            metadata,
+            keyOwner
         );
 
-        // Step 8: Generate Sora prompts
-        const soraPrompts = await generateSoraPrompts(
-            transcription,
-            frameAnalyses,
-            context,
-            metadata
-        );
+        // Step 7.5: Analyze timing patterns
+        const timingPatterns = await analyzeTimingPatterns(frameAnalyses, metadata);
+
+        // Step 8: Generate Sora prompts - SKIPPED FOR PHASE 1
+        // User requested strictly no Sora prompting during initial analysis to save costs/avoid quota errors.
+        // The frontend will handle prompt generation on demand or via deterministic builder.
+        const soraPrompts = {
+            main: '',
+            variations: [],
+            technical: null
+        };
 
         // Step 9: Create timeline
         const timeline = frameAnalyses.map((frame, index) => ({
@@ -108,6 +131,8 @@ export async function POST(request: NextRequest) {
                 transcription,
                 visualAnalysis: frameAnalyses,
                 context,
+                hookAnalysis,
+                timingPatterns,
                 soraPrompts,
                 timeline,
                 metadata: {

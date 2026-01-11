@@ -18,7 +18,7 @@ export interface VideoMetadata {
  */
 export async function downloadTikTok(url: string, outputPath: string): Promise<string> {
   try {
-    const command = `yt-dlp -f "best[ext=mp4]" -o "${outputPath}" "${url}"`;
+    const command = `yt-dlp -f "best[ext=mp4]" --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o "${outputPath}" "${url}"`;
     await execAsync(command);
     return outputPath;
   } catch (error) {
@@ -31,7 +31,7 @@ export async function downloadTikTok(url: string, outputPath: string): Promise<s
  */
 export async function extractAudio(videoPath: string): Promise<string> {
   const audioPath = videoPath.replace('.mp4', '.mp3');
-  
+
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
       .output(audioPath)
@@ -77,6 +77,51 @@ export async function extractKeyFrames(
       });
   });
 }
+
+/**
+ * Extracts high-density frames from the first 3 seconds for hook analysis
+ * Returns frames at: 0s, 0.5s, 1s, 1.5s, 2s, 2.5s, 3s
+ */
+export async function extractHighDensityFrames(
+  videoPath: string,
+  outputDir: string
+): Promise<string[]> {
+  // Ensure output directory exists
+  await fs.mkdir(outputDir, { recursive: true });
+
+  const metadata = await getVideoMetadata(videoPath);
+  const framePaths: string[] = [];
+
+  // Extract frames at 0, 0.5, 1, 1.5, 2, 2.5, 3 seconds
+  const timestamps = [0, 0.5, 1, 1.5, 2, 2.5, 3].filter(t => t <= metadata.duration);
+
+  // Extract each frame at specific timestamp
+  for (let i = 0; i < timestamps.length; i++) {
+    const timestamp = timestamps[i];
+    const outputPath = path.join(outputDir, `hook_frame_${i}_${timestamp}s.jpg`);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(videoPath)
+          .screenshots({
+            timestamps: [timestamp],
+            filename: `hook_frame_${i}_${timestamp}s.jpg`,
+            folder: outputDir,
+            size: '1280x?'
+          })
+          .on('end', () => resolve())
+          .on('error', (err) => reject(err));
+      });
+
+      framePaths.push(outputPath);
+    } catch (error) {
+      console.warn(`Failed to extract frame at ${timestamp}s:`, error);
+    }
+  }
+
+  return framePaths;
+}
+
 
 /**
  * Gets video metadata using ffprobe

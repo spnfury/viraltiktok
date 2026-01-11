@@ -6,6 +6,9 @@ import Link from 'next/link';
 import PromptEditor from '@/components/PromptEditor';
 import FrameCarousel from '@/components/FrameCarousel';
 import Timeline from '@/components/Timeline';
+import HookIndicator from '@/components/HookIndicator';
+import { buildEnrichedSoraPrompt } from '@/lib/prompt-enrichment';
+import type { HookAnalysis, TimingPattern } from '@/types/hook-analysis';
 
 interface AnalysisData {
     transcription: string;
@@ -19,6 +22,8 @@ interface AnalysisData {
         mood: string;
         targetAudience: string;
     };
+    hookAnalysis?: HookAnalysis;
+    timingPatterns?: TimingPattern[];
     soraPrompts: {
         main: string;
         variations: string[];
@@ -54,10 +59,11 @@ function AnalyzeContent() {
                     setProgress(prev => (prev < 90 ? prev + 1 : prev));
                 }, 1000);
 
+                const keyOwner = localStorage.getItem('openai_key_owner') || 'sergio';
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url }),
+                    body: JSON.stringify({ url, keyOwner }),
                 });
 
                 const result = await response.json();
@@ -176,6 +182,12 @@ function AnalyzeContent() {
                 <div className="lg:col-span-2 space-y-8">
                     <div className="tabs">
                         <button
+                            className={`tab ${activeTab === 'hook' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('hook')}
+                        >
+                            ⚡ Hook Analysis
+                        </button>
+                        <button
                             className={`tab ${activeTab === 'prompts' ? 'active' : ''}`}
                             onClick={() => setActiveTab('prompts')}
                         >
@@ -202,17 +214,36 @@ function AnalyzeContent() {
                     </div>
 
                     <div className="fade-in">
+                        {activeTab === 'hook' && data.hookAnalysis && (
+                            <HookIndicator hookAnalysis={data.hookAnalysis} />
+                        )}
+
+                        {activeTab === 'hook' && !data.hookAnalysis && (
+                            <div className="glass p-8 text-center">
+                                <p className="text-zinc-400">No se detectó análisis de hook en este video.</p>
+                            </div>
+                        )}
+
                         {activeTab === 'prompts' && (
                             <PromptEditor
                                 mainPrompt={data.soraPrompts.main}
                                 variations={data.soraPrompts.variations}
                                 onGenerate={async (prompt) => {
                                     try {
+                                        // Build enriched prompt with all analysis context
+                                        const enrichedPrompt = buildEnrichedSoraPrompt({
+                                            mainPrompt: prompt,
+                                            transcription: data.transcription,
+                                            visualAnalysis: data.visualAnalysis,
+                                            context: data.context,
+                                            timeline: data.timeline
+                                        });
+
                                         const response = await fetch('/api/generate', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                prompt,
+                                                prompt: enrichedPrompt,
                                                 options: {
                                                     duration: Math.round(data.metadata.duration),
                                                     aspectRatio: data.metadata.resolution.includes('x') &&
@@ -242,7 +273,11 @@ function AnalyzeContent() {
                         )}
 
                         {activeTab === 'timeline' && (
-                            <Timeline segments={data.timeline} totalDuration={data.metadata.duration} />
+                            <Timeline
+                                segments={data.timeline}
+                                totalDuration={data.metadata.duration}
+                                hookAnalysis={data.hookAnalysis}
+                            />
                         )}
 
                         {activeTab === 'transcription' && (

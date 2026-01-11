@@ -9,17 +9,6 @@ const getOpenAIClient = () => {
 
 const openai = getOpenAIClient();
 
-console.log('OpenAI Client Keys:', Object.keys(openai).filter(k => !k.startsWith('_')));
-if ((openai as any).videos) {
-    console.log('OpenAI Videos Keys:', Object.keys((openai as any).videos).filter(k => !k.startsWith('_')));
-}
-if ((openai as any).beta) {
-    console.log('OpenAI Beta Keys:', Object.keys((openai as any).beta).filter(k => !k.startsWith('_')));
-    if ((openai as any).beta.videos) {
-        console.log('OpenAI Beta Videos Keys:', Object.keys((openai as any).beta.videos).filter(k => !k.startsWith('_')));
-    }
-}
-
 export interface SoraGenerationOptions {
     model?: string;
     duration?: number;
@@ -46,10 +35,9 @@ const getSoraClient = (client: any) => {
         { name: 'videos', value: client.videos }
     ];
 
-    for (const { name, value } of paths) {
+    for (const { value } of paths) {
         if (value && typeof value.create === 'function') {
-            console.log(`Sora client found at: ${name}`);
-            return value;
+            return value; // Found valid client
         }
     }
     return null;

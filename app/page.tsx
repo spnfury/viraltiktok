@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ModeSelector from '@/components/ModeSelector';
 import PromptInput from '@/components/PromptInput';
+import KeySelector from '@/components/KeySelector';
 
 export default function Home() {
   const [mode, setMode] = useState<'tiktok' | 'prompt'>('tiktok');
@@ -24,10 +25,18 @@ export default function Home() {
   const handleDirectGenerate = async (data: { prompt: string; options: any }) => {
     setIsLoading(true);
     try {
+      // Add Spanish language requirement to prompt
+      const promptWithSpanish = `${data.prompt}
+
+IMPORTANT: All spoken dialogue, narration, and on-screen text MUST be in SPANISH (español). Any text overlays, captions, or written content should be in Spanish.`;
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          prompt: promptWithSpanish
+        }),
       });
 
       const result = await response.json();
@@ -50,7 +59,8 @@ export default function Home() {
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20 relative">
         {/* Navigation */}
-        <nav className="absolute top-8 right-8 z-10">
+        <nav className="absolute top-8 right-8 z-10 flex gap-4">
+          <KeySelector />
           <Link
             href="/history"
             className="glass px-6 py-3 flex items-center gap-2 hover:bg-zinc-800/50 transition-all border-zinc-700/50"

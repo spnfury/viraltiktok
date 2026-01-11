@@ -48,6 +48,7 @@ export default function PromptEditor({ mainPrompt, variations, onGenerate }: Pro
                 <textarea
                     value={activePrompt}
                     onChange={(e) => setActivePrompt(e.target.value)}
+                    placeholder="El prompt se generará automáticamente con todo el contexto del análisis cuando hagas clic en 'Generar con Sora'. También puedes escribir tu propio prompt aquí."
                     className="w-full h-64 p-6 glass text-zinc-300 font-mono text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
                 <button
