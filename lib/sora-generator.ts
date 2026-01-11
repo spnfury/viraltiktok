@@ -1,19 +1,11 @@
-import OpenAI from 'openai';
-
-const getOpenAIClient = () => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    return new OpenAI({
-        apiKey: apiKey || 'dummy_key_for_build',
-    });
-};
-
-const openai = getOpenAIClient();
+import { getOpenAIClient, type OpenAIKeyOwner } from './ai-analyzer';
 
 export interface SoraGenerationOptions {
     model?: string;
     duration?: number;
     aspectRatio?: '16:9' | '9:16' | '1:1';
     resolution?: '720p' | '1080p';
+    keyOwner?: OpenAIKeyOwner;
 }
 
 export interface SoraVideo {
@@ -47,6 +39,7 @@ const getSoraClient = (client: any) => {
  * Initiates a Sora video generation
  */
 export async function generateSoraVideo(prompt: string, options: SoraGenerationOptions = {}): Promise<string> {
+    const openai = getOpenAIClient(options.keyOwner);
     const sora = getSoraClient(openai);
 
     if (!sora) {
@@ -73,7 +66,8 @@ export async function generateSoraVideo(prompt: string, options: SoraGenerationO
 /**
  * Checks the status of a Sora generation
  */
-export async function getSoraStatus(generationId: string): Promise<SoraVideo> {
+export async function getSoraStatus(generationId: string, keyOwner?: OpenAIKeyOwner): Promise<SoraVideo> {
+    const openai = getOpenAIClient(keyOwner);
     const sora = getSoraClient(openai);
 
     if (!sora) {
@@ -100,7 +94,8 @@ export async function getSoraStatus(generationId: string): Promise<SoraVideo> {
 /**
  * Lists recent Sora generations
  */
-export async function listSoraGenerations() {
+export async function listSoraGenerations(keyOwner?: OpenAIKeyOwner) {
+    const openai = getOpenAIClient(keyOwner);
     const sora = getSoraClient(openai);
     if (!sora) return [];
 

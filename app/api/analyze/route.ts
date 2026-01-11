@@ -38,10 +38,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate OpenAI API key
-        if (!process.env.OPENAI_API_KEY) {
+        // Validate OpenAI API key based on owner or default
+        const apiKey = keyOwner === 'sergio'
+            ? process.env.OPENAI_API_KEY_SERGIO
+            : keyOwner === 'ruben'
+                ? process.env.OPENAI_API_KEY_RUBEN
+                : process.env.OPENAI_API_KEY;
+
+        if (!apiKey) {
             return NextResponse.json(
-                { success: false, error: 'OpenAI API key not configured' },
+                {
+                    success: false,
+                    error: `OpenAI API key not configured${keyOwner ? ` for ${keyOwner}` : ''}. Please add it to Vercel Environment Variables.`
+                },
                 { status: 500 }
             );
         }

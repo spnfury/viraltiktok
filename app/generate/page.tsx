@@ -22,7 +22,8 @@ function GenerateContent() {
 
         const checkStatus = async () => {
             try {
-                const response = await fetch(`/api/generate/${id}`);
+                const keyOwner = localStorage.getItem('openai_key_owner') || 'sergio';
+                const response = await fetch(`/api/generate/${id}?keyOwner=${keyOwner}`);
                 const result = await response.json();
 
                 if (result.success) {

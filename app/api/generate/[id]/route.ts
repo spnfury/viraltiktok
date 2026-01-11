@@ -8,6 +8,8 @@ export async function GET(
 ) {
     try {
         const { id } = await context.params;
+        const { searchParams } = new URL(request.url);
+        const keyOwner = searchParams.get('keyOwner') as any;
 
         if (!id) {
             return NextResponse.json(
@@ -16,7 +18,7 @@ export async function GET(
             );
         }
 
-        const status = await getSoraStatus(id);
+        const status = await getSoraStatus(id, keyOwner);
 
         // Update Supabase if configured
         if (supabase) {

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
     try {
-        const { prompt, options } = await request.json();
+        const { prompt, options, keyOwner } = await request.json();
 
         if (!prompt || typeof prompt !== 'string') {
             return NextResponse.json(
@@ -13,14 +13,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (!process.env.OPENAI_API_KEY) {
+        // Validate OpenAI API key based on owner or default
+        const apiKey = keyOwner === 'sergio'
+            ? process.env.OPENAI_API_KEY_SERGIO
+            : keyOwner === 'ruben'
+                ? process.env.OPENAI_API_KEY_RUBEN
+                : process.env.OPENAI_API_KEY;
+
+        if (!apiKey) {
             return NextResponse.json(
-                { success: false, error: 'OpenAI API key not configured' },
+                {
+                    success: false,
+                    error: `OpenAI API key not configured${keyOwner ? ` for ${keyOwner}` : ''}. Please add it to Vercel Environment Variables.`
+                },
                 { status: 500 }
             );
         }
 
-        const generationId = await generateSoraVideo(prompt, options);
+        const generationId = await generateSoraVideo(prompt, {
+            ...options,
+            keyOwner
+        });
 
         // Save to Supabase if configured
         if (supabase) {

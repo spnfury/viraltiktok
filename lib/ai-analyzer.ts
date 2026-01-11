@@ -3,7 +3,9 @@ import fs from 'fs/promises';
 import type { VideoMetadata } from './video-processor';
 import type { HookAnalysis, HookType, HookStrength, TimingPattern, FrameDifference } from '@/types/hook-analysis';
 
-const getOpenAIClient = (keyOwner?: 'sergio' | 'ruben') => {
+export type OpenAIKeyOwner = 'sergio' | 'ruben';
+
+export const getOpenAIClient = (keyOwner?: OpenAIKeyOwner) => {
     let apiKey = process.env.OPENAI_API_KEY;
 
     // Use specific key if owner is specified

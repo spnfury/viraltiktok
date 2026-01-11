@@ -239,11 +239,13 @@ function AnalyzeContent() {
                                             timeline: data.timeline
                                         });
 
+                                        const keyOwner = localStorage.getItem('openai_key_owner') as any || 'sergio';
                                         const response = await fetch('/api/generate', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 prompt: enrichedPrompt,
+                                                keyOwner,
                                                 options: {
                                                     duration: Math.round(data.metadata.duration),
                                                     aspectRatio: data.metadata.resolution.includes('x') &&
