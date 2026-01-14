@@ -139,11 +139,12 @@ Format as JSON with keys: description, objects (array), colors (array), composit
             composition: parsed.composition || '',
             actions: Array.isArray(parsed.actions) ? parsed.actions : [],
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Frame analysis error at ${timestamp}s:`, error);
+        const isQuotaError = error.status === 429 || error.code === 'insufficient_quota';
         return {
             timestamp,
-            description: 'Analysis failed',
+            description: isQuotaError ? 'Error: Cuota de OpenAI agotada' : 'Analysis failed',
             objects: [],
             colors: [],
             composition: '',
@@ -203,11 +204,12 @@ Provide a JSON analysis with:
             mood: parsed.mood || 'neutral',
             targetAudience: parsed.targetAudience || 'general',
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Context analysis error:', error);
+        const isQuotaError = error.status === 429 || error.code === 'insufficient_quota';
         return {
-            videoType: 'unknown',
-            style: 'standard',
+            videoType: isQuotaError ? 'Error de Cuota' : 'unknown',
+            style: isQuotaError ? 'Revisa tu API Key' : 'standard',
             pacing: 'medium',
             hooks: [],
             dominantColors: [],
@@ -301,13 +303,14 @@ Be specific and actionable. Focus on WHAT makes viewers stop scrolling.`;
             audioCues: Array.isArray(parsed.audioCues) ? parsed.audioCues : undefined,
             confidence: parsed.confidence || 0.7
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Hook detection error:', error);
+        const isQuotaError = error.status === 429 || error.code === 'insufficient_quota';
         return {
             timestamp: 0,
             type: 'visual',
             strength: 'low',
-            description: 'Hook detection failed',
+            description: isQuotaError ? 'Error: Cuota de OpenAI agotada en esta llave' : 'Hook detection failed',
             keyElements: [],
             replicationTips: [],
             confidence: 0

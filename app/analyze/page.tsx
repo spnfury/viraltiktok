@@ -110,14 +110,23 @@ function AnalyzeContent() {
     }
 
     if (error) {
+        const isQuotaError = error.toLowerCase().includes('quota') || error.toLowerCase().includes('cuota');
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6">
-                <div className="text-6xl text-red-500">❌</div>
-                <h2 className="text-2xl font-bold text-white">Error en el análisis</h2>
-                <p className="text-zinc-400 max-w-md">{error}</p>
-                <Link href="/" className="btn-primary">
-                    Intentar de nuevo
-                </Link>
+                <div className="text-6xl">{isQuotaError ? '🔑' : '❌'}</div>
+                <h2 className="text-2xl font-bold text-white">
+                    {isQuotaError ? 'Límite de API alcanzado' : 'Error en el análisis'}
+                </h2>
+                <p className="text-zinc-400 max-w-md">
+                    {isQuotaError
+                        ? 'La llave de OpenAI seleccionada no tiene saldo o ha superado su límite. Prueba cambiando a la llave de la otra persona en el inicio.'
+                        : error}
+                </p>
+                <div className="flex gap-4">
+                    <Link href="/" className="btn-primary">
+                        {isQuotaError ? 'Volver y cambiar llave' : 'Intentar de nuevo'}
+                    </Link>
+                </div>
             </div>
         );
     }
