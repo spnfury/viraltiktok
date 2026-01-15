@@ -4,17 +4,15 @@ import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { pipeline } from 'stream/promises';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_SERGIO,
-});
-
-export const config = {
-    api: {
-        bodyParser: false, // Handle formdata manually if needed in pages, but app router handles it via request.formData()
-    },
-};
+// Lazy initialization to avoid build-time errors
+function getOpenAIClient() {
+    const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_SERGIO;
+    if (!apiKey) {
+        throw new Error('OpenAI API key not configured');
+    }
+    return new OpenAI({ apiKey });
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -47,6 +45,7 @@ export async function POST(request: NextRequest) {
 
         // 3. Generate TTS Audio
         const speechPath = path.join(uploadsDir, `${id}_speech.mp3`);
+        const openai = getOpenAIClient();
         const mp3Response = await openai.audio.speech.create({
             model: 'tts-1',
             voice: voice as any,
