@@ -14,6 +14,40 @@ function GenerateContent() {
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [prompt, setPrompt] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+    const handleUpload = async () => {
+        if (!id) return;
+        setIsUploading(true);
+        setUploadStatus(null);
+
+        try {
+            // Get session ID from local storage if available
+            const sessionId = localStorage.getItem('tiktok_session_id');
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    videoId: id, // Assuming the ID maps to the filename
+                    caption: `${prompt.substring(0, 100)}... #fyp #viral`, // Simple caption
+                    sessionId
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                setUploadStatus({ success: true, message: '¡Video subido a TikTok exitosamente!' });
+            } else {
+                setUploadStatus({ success: false, message: `Error: ${result.error}` });
+            }
+        } catch (error) {
+            setUploadStatus({ success: false, message: 'Error de conexión al subir.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -94,6 +128,33 @@ function GenerateContent() {
 
                 {status === 'completed' && videoUrl && (
                     <VideoPlayer url={videoUrl} prompt={prompt} />
+                )}
+
+                {status === 'completed' && videoUrl && (
+                    <div className="mt-6 flex flex-col items-center gap-4 fade-in">
+                        <button
+                            onClick={handleUpload}
+                            disabled={isUploading}
+                            className={`btn-secondary flex items-center gap-2 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isUploading ? (
+                                <>
+                                    <div className="spinner w-4 h-4"></div>
+                                    Subiendo a TikTok...
+                                </>
+                            ) : (
+                                <>
+                                    <span>🎵</span> Subir a TikTok (@brainrotclipsreal)
+                                </>
+                            )}
+                        </button>
+
+                        {uploadStatus && (
+                            <div className={`text-sm p-3 rounded-lg border ${uploadStatus.success ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                                {uploadStatus.message}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {error && (

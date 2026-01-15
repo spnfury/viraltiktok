@@ -45,3 +45,28 @@ export async function setWebhook(url: string) {
 
     return response.json();
 }
+
+export async function getFile(fileId: string) {
+    if (!TELEGRAM_BOT_TOKEN) {
+        throw new Error('TELEGRAM_BOT_TOKEN is not defined');
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            file_id: fileId,
+        }),
+    });
+
+    return response.json();
+}
+
+export function getFileDownloadUrl(filePath: string) {
+    if (!TELEGRAM_BOT_TOKEN) {
+        throw new Error('TELEGRAM_BOT_TOKEN is not defined');
+    }
+    return `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
+}

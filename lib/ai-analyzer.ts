@@ -442,7 +442,49 @@ PRIORITIZE the hook - it determines if viewers watch the rest.`;
             type: error.type
         });
 
-        // Return a basic fallback with error info
         throw new Error(`Failed to generate Sora prompt: ${error.message || 'Unknown error'}`);
+    }
+}
+
+/**
+ * Generates advice for failed TikTok uploads based on the error reason
+ */
+export async function getUploadAdvice(
+    violationReason: string,
+    keyOwner?: 'sergio' | 'ruben'
+): Promise<{ advice: string; tips: string[] }> {
+    const openai = getOpenAIClient(keyOwner);
+    try {
+        const prompt = `TikTok rejected a video upload with the following violation reason: "${violationReason}".
+
+        Act as a TikTok expert and video editor.
+        1. Explain briefly WHY this violation likely occurred (technical or content-wise).
+        2. Provide 3-5 CONCRETE, TECHNICAL tips to modify the video file to bypass this detection.
+           Examples of tips: "Speed up video by 5%", "Flip horizontally", "Add a noise overlay", "Change metadata", "Add background music".
+
+        Format as JSON with keys:
+        - advice: Short explanation (max 2 sentences)
+        - tips: Array of strings (specific actionable steps)`;
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+        });
+
+        const content = response.choices[0].message.content || '{}';
+        const parsed = JSON.parse(content);
+
+        return {
+            advice: parsed.advice || 'TikTok restricted this video.',
+            tips: Array.isArray(parsed.tips) ? parsed.tips : ['Try editing the video and re-uploading.']
+        };
+    } catch (error) {
+        console.error('Advice generation error:', error);
+        return {
+            advice: 'Could not generate specific advice.',
+            tips: ['Change the video speed', 'Add a filter', 'Flip the video']
+        };
     }
 }

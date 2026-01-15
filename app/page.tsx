@@ -7,8 +7,12 @@ import ModeSelector from '@/components/ModeSelector';
 import PromptInput from '@/components/PromptInput';
 import KeySelector from '@/components/KeySelector';
 
+import CookieInput from '@/components/CookieInput';
+import UploadInput from '@/components/UploadInput';
+import SimpleCreator from '@/components/SimpleCreator';
+
 export default function Home() {
-  const [mode, setMode] = useState<'tiktok' | 'prompt'>('tiktok');
+  const [mode, setMode] = useState<'tiktok' | 'prompt' | 'upload' | 'creator'>('tiktok');
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -59,15 +63,20 @@ IMPORTANT: All spoken dialogue, narration, and on-screen text MUST be in SPANISH
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20 relative">
         {/* Navigation */}
-        <nav className="absolute top-8 right-8 z-10 flex gap-4">
-          <KeySelector />
-          <Link
-            href="/history"
-            className="glass px-6 py-3 flex items-center gap-2 hover:bg-zinc-800/50 transition-all border-zinc-700/50"
-          >
-            <span>📚</span>
-            <span className="font-semibold">Mi Biblioteca</span>
-          </Link>
+        <nav className="absolute top-8 right-8 z-10 flex gap-4 items-start">
+          <div className="flex flex-col gap-2 items-end">
+            <div className="flex gap-4">
+              <KeySelector />
+              <Link
+                href="/history"
+                className="glass px-6 py-3 flex items-center gap-2 hover:bg-zinc-800/50 transition-all border-zinc-700/50"
+              >
+                <span>📚</span>
+                <span className="font-semibold">Mi Biblioteca</span>
+              </Link>
+            </div>
+            <CookieInput />
+          </div>
         </nav>
 
         <main className="max-w-4xl w-full text-center fade-in">
@@ -118,9 +127,17 @@ IMPORTANT: All spoken dialogue, narration, and on-screen text MUST be in SPANISH
                 </button>
               </div>
             </form>
-          ) : (
+          ) : mode === 'prompt' ? (
             <div className="mb-12">
               <PromptInput onSubmit={handleDirectGenerate} isLoading={isLoading} />
+            </div>
+          ) : mode === 'upload' ? (
+            <div className="mb-12">
+              <UploadInput />
+            </div>
+          ) : (
+            <div className="mb-12">
+              <SimpleCreator />
             </div>
           )}
 
