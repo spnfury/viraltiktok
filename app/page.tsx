@@ -180,6 +180,10 @@ IMPORTANT: All spoken dialogue, narration, and on-screen text MUST be in SPANISH
             </div>
           </div>
         </main>
+
+        <footer className="absolute bottom-4 text-zinc-500 text-sm">
+          © 2026 ViralTikTok AI Agent
+        </footer>
       </div>
     </>
   );
